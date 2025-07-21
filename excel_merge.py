@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+from bs4 import BeautifulSoup
 from io import BytesIO, StringIO
 import tempfile
 import os
@@ -10,6 +11,22 @@ st.subheader("Upload multiple Excel files (.xls or .xlsx), and merge them into o
 
 uploaded_files = st.file_uploader("Upload Excel Files", type=["xls", "xlsx"], accept_multiple_files=True)
 merge_clicked = st.button("🔁 Merge Files", key="merge_button")
+
+def extract_table_from_html(file_path):
+    with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+        soup = BeautifulSoup(f, 'lxml')
+        table = soup.find("table")
+        if table is None:
+            return None
+        rows = table.find_all("tr")
+        data = []
+        for row in rows:
+            cols = [col.get_text(strip=True) for col in row.find_all(["td", "th"])]
+            data.append(cols)
+        df = pd.DataFrame(data)
+        df.columns = df.iloc[0]  # First row as header
+        df = df.drop(index=0).reset_index(drop=True)
+        return df
 
 if merge_clicked:
     if uploaded_files:
@@ -27,13 +44,13 @@ if merge_clicked:
                 else:
                     df = pd.read_excel(temp_path)
             except Exception:
-                st.warning(f"⚠️ {uploaded_file.name} is not a real Excel file. Trying to parse as HTML...")
+                st.warning(f"⚠️ {uploaded_file.name} is not a real Excel file. Trying custom HTML parsing...")
                 try:
-                    with open(temp_path, 'r', encoding='utf-8', errors='ignore') as f:
-                        html_content = f.read()
-                        df = pd.read_html(StringIO(html_content))[0]
+                    df = extract_table_from_html(temp_path)
+                    if df is None:
+                        raise Exception("No table found")
                 except Exception:
-                    st.error(f"❌ Failed to read `{uploaded_file.name}` even as HTML.")
+                    st.error(f"❌ Failed to read `{uploaded_file.name}` even as custom HTML.")
                     os.unlink(temp_path)
                     continue
 
