@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import bs4
 from bs4 import BeautifulSoup
 from io import BytesIO, StringIO
 import tempfile
