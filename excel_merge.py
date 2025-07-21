@@ -56,7 +56,7 @@ if merge_clicked:
                 else:
                     df = pd.read_excel(temp_path)
             except Exception:
-                st.warning(f"⚠️ {uploaded_file.name} is not a real Excel file. Trying custom HTML parsing...")
+                # st.warning(f"⚠️ {uploaded_file.name} is not a real Excel file. Trying custom HTML parsing...")
                 try:
                     df = extract_table_from_html(temp_path)
                     if df is None:
