@@ -1,14 +1,10 @@
-
-
-
 import streamlit as st
 import pandas as pd
-from io import BytesIO
+from io import BytesIO, StringIO
 import tempfile
 import os
 
 st.set_page_config(page_title="Excel Merger App", layout="centered")
-
 st.title("📊 Excel Sheet Merger")
 st.subheader("Upload multiple Excel files (.xls or .xlsx), and merge them into one combined file.")
 
@@ -20,8 +16,8 @@ if merge_clicked:
         all_dfs = []
 
         for uploaded_file in uploaded_files:
-            # Save uploaded file to a temporary path
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".xls") as tmp:
+            suffix = os.path.splitext(uploaded_file.name)[1]
+            with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
                 tmp.write(uploaded_file.read())
                 temp_path = tmp.name
 
@@ -30,17 +26,19 @@ if merge_clicked:
                     df = pd.read_excel(temp_path, engine='xlrd')
                 else:
                     df = pd.read_excel(temp_path)
-            except Exception as e:
-                #st.warning(f"⚠️ {uploaded_file.name} is not a real Excel file. Trying as HTML table...")
+            except Exception:
+                st.warning(f"⚠️ {uploaded_file.name} is not a real Excel file. Trying to parse as HTML...")
                 try:
-                    df = pd.read_html(temp_path)[0]
-                except Exception as e2:
+                    with open(temp_path, 'r', encoding='utf-8', errors='ignore') as f:
+                        html_content = f.read()
+                        df = pd.read_html(StringIO(html_content))[0]
+                except Exception:
                     st.error(f"❌ Failed to read `{uploaded_file.name}` even as HTML.")
-                    os.unlink(temp_path)  # cleanup
+                    os.unlink(temp_path)
                     continue
 
             all_dfs.append(df)
-            os.unlink(temp_path)  # cleanup
+            os.unlink(temp_path)
 
         if all_dfs:
             merged_df = pd.concat(all_dfs, ignore_index=True)
