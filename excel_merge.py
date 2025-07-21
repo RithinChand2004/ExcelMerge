@@ -28,6 +28,18 @@ def extract_table_from_html(file_path):
         df = df.drop(index=0).reset_index(drop=True)
         return df
 
+def make_unique(columns):
+    seen = {}
+    result = []
+    for col in columns:
+        if col not in seen:
+            seen[col] = 1
+            result.append(col)
+        else:
+            seen[col] += 1
+            result.append(f"{col}_{seen[col]}")
+    return result
+
 if merge_clicked:
     if uploaded_files:
         all_dfs = []
@@ -54,7 +66,7 @@ if merge_clicked:
                     os.unlink(temp_path)
                     continue
 
-            df.columns = pd.io.parsers.ParserBase({'names': df.columns})._maybe_dedup_names(df.columns)
+            df.columns = make_unique(df.columns)
             df.columns = df.columns.str.strip()
             all_dfs.append(df)
             os.unlink(temp_path)
