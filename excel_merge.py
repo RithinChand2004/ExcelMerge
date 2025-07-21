@@ -54,6 +54,8 @@ if merge_clicked:
                     os.unlink(temp_path)
                     continue
 
+            df.columns = pd.io.parsers.ParserBase({'names': df.columns})._maybe_dedup_names(df.columns)
+            df.columns = df.columns.str.strip()
             all_dfs.append(df)
             os.unlink(temp_path)
 
